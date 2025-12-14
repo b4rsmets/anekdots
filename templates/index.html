@@ -1,0 +1,129 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Панель управления -->
+    <div class="control-panel">
+        <div class="form-group">
+            <label for="category"><i class="fas fa-tags"></i> Категория:</label>
+            <select id="category" class="form-control">
+                {% for cat in categories %}
+                <option value="{{ cat.value }}" {% if cat.value == current_category %}selected{% endif %}>
+                    {{ cat.label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="language"><i class="fas fa-language"></i> Язык:</label>
+            <select id="language" class="form-control">
+                {% for lang in languages %}
+                <option value="{{ lang.value }}" {% if lang.value == current_language %}selected{% endif %}>
+                    {{ lang.label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="buttons">
+            <button id="generateBtn" class="btn btn-primary">
+                <i class="fas fa-bolt"></i> Новая шутка
+            </button>
+            <button id="autoBtn" class="btn btn-secondary">
+                <i class="fas fa-play"></i> Авто-режим (10 сек)
+            </button>
+            <button id="historyBtn" class="btn btn-info">
+                <i class="fas fa-history"></i> История
+            </button>
+            <button id="statsBtn" class="btn btn-success">
+                <i class="fas fa-chart-bar"></i> Статистика
+            </button>
+            <button id="helpBtn" class="btn btn-warning">
+                <i class="fas fa-question-circle"></i> Помощь
+            </button>
+        </div>
+    </div>
+
+    <!-- Отображение шутки -->
+    <div class="joke-display">
+        <div class="joke-card">
+            <div class="joke-header">
+                <span class="joke-id">Шутка #<span id="jokeId">0</span></span>
+                <span class="joke-meta">
+                    <span id="jokeCategory" class="badge">Все</span>
+                    <span id="jokeLanguage" class="badge">🇷🇺 Русский</span>
+                    <span id="jokeTime" class="time">--:--:--</span>
+                </span>
+            </div>
+            <div class="joke-text" id="jokeText">
+                Нажмите кнопку "Новая шутка" чтобы получить первую шутку!
+            </div>
+            <div class="joke-actions">
+                <button id="copyBtn" class="btn btn-small">
+                    <i class="far fa-copy"></i> Копировать
+                </button>
+                <button id="shareBtn" class="btn btn-small">
+                    <i class="fas fa-share-alt"></i> Поделиться
+                </button>
+                <button id="speakBtn" class="btn btn-small">
+                    <i class="fas fa-volume-up"></i> Озвучить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- История шуток -->
+    <div id="historyPanel" class="history-panel" style="display: none;">
+        <div class="panel-header">
+            <h3><i class="fas fa-history"></i> История шуток</h3>
+            <div>
+                <button id="clearHistoryBtn" class="btn btn-small btn-warning">
+                    <i class="fas fa-trash"></i> Очистить
+                </button>
+            </div>
+        </div>
+        <div class="history-list" id="historyList">
+            <!-- История будет загружена здесь -->
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div id="statsPanel" class="stats-panel" style="display: none;">
+        <div class="panel-header">
+            <h3><i class="fas fa-chart-bar"></i> Статистика</h3>
+            <button id="refreshStatsBtn" class="btn btn-small btn-info">
+                <i class="fas fa-sync-alt"></i> Обновить
+            </button>
+        </div>
+        <div class="stats-content" id="statsContent">
+            <!-- Статистика будет загружена здесь -->
+        </div>
+    </div>
+
+    <!-- Помощь -->
+    <div id="helpPanel" class="help-panel" style="display: none;">
+        <div class="panel-header">
+            <h3><i class="fas fa-question-circle"></i> Помощь</h3>
+        </div>
+        <div class="help-content">
+            <h4>Как пользоваться:</h4>
+            <ul>
+                <li><strong>Новая шутка</strong> - получить случайную шутку</li>
+                <li><strong>Авто-режим</strong> - автоматическая генерация каждые 10 секунд</li>
+                <li><strong>Категории:</strong>
+                    <ul>
+                        <li><strong>Все</strong> - случайные шутки из всех категорий</li>
+                        <li><strong>Нейтральные</strong> - шутки без обидного юмора</li>
+                        <li><strong>Чак Норрис</strong> - шутки про легендарного Чака Норриса</li>
+                    </ul>
+                </li>
+                <li><strong>Языки:</strong> 🇷🇺 Русский и 🇺🇸 Английский</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Уведомления -->
+    <div id="notification" class="notification"></div>
+</div>
+{% endblock %}
