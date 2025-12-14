@@ -4,7 +4,7 @@ import random
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-from deep_translator import GoogleTranslator  # Библиотека для перевода[citation:1]
+from deep_translator import GoogleTranslator
 
 # Загрузка переменных окружения
 load_dotenv()
