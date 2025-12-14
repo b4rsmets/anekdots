@@ -4,6 +4,7 @@ import random
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from deep_translator import GoogleTranslator  # Библиотека для перевода[citation:1]
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -18,19 +19,24 @@ JOKE_CATEGORIES = [
     {'value': 'chuck', 'label': 'Чак Норрис'}
 ]
 
+# Поддерживаемые языки для интерфейса и перевода[citation:1]
 LANGUAGES = [
     {'value': 'en', 'label': '🇺🇸 Английский'},
-    {'value': 'ru', 'label': '🇷🇺 Русский'}
+    {'value': 'ru', 'label': '🇷🇺 Русский'},
+    {'value': 'fr', 'label': '🇫🇷 Французский'},
+    {'value': 'de', 'label': '🇩🇪 Немецкий'},
+    {'value': 'it', 'label': '🇮🇹 Итальянский'}
 ]
 
 
 class JokeGenerator:
     def __init__(self):
         self.joke_history = []
-        self.joke_stats = {
-            'ru': {'total': 0, 'by_category': {}},
-            'en': {'total': 0, 'by_category': {}}
-        }
+        self.joke_stats = {}
+
+        # Инициализируем статистику для всех языков
+        for lang in [l['value'] for l in LANGUAGES]:
+            self.joke_stats[lang] = {'total': 0, 'by_category': {}}
 
     def get_category_label(self, category_value):
         """Получить русское название категории"""
@@ -46,18 +52,39 @@ class JokeGenerator:
                 return lang['label']
         return lang_value
 
-    def get_joke(self, category='all', language='ru'):
-        """Генерация шутки с указанной категорией и языком"""
+    def translate_text(self, text, target_lang='ru'):
+        """Перевод текста на указанный язык[citation:1]"""
         try:
-            # Если выбрана категория 'all', берем случайную из доступных
+            if target_lang == 'en':
+                return text  # Английский - исходный язык
+
+            # Используем GoogleTranslator для перевода[citation:1]
+            translated = GoogleTranslator(source='auto', target=target_lang).translate(text)
+            return translated
+        except Exception as e:
+            print(f"Ошибка перевода: {e}")
+            return text  # Возвращаем оригинал в случае ошибки
+
+    def get_joke(self, category='all', language='ru'):
+        """Генерация шутки: всегда на английском, с переводом если нужно"""
+        try:
+            # Всегда генерируем шутку на английском (исходный язык pyjokes)[citation:1]
             if category == 'all':
                 available_cats = ['neutral', 'chuck']
                 category = random.choice(available_cats)
 
-            joke = pyjokes.get_joke(language=language, category=category)
+            # Получаем шутку на английском
+            english_joke = pyjokes.get_joke(language='en', category=category)
+
+            # Переводим шутку, если выбран не английский язык[citation:1]
+            if language != 'en':
+                final_joke = self.translate_text(english_joke, language)
+            else:
+                final_joke = english_joke
 
             joke_data = {
-                'text': joke,
+                'text': final_joke,
+                'original_text': english_joke,  # Сохраняем оригинальную английскую шутку
                 'category': category,
                 'category_label': self.get_category_label(category),
                 'language': language,
@@ -68,7 +95,10 @@ class JokeGenerator:
             }
 
             # Обновляем статистику
-            self.joke_stats[language]['total'] = self.joke_stats[language].get('total', 0) + 1
+            if language not in self.joke_stats:
+                self.joke_stats[language] = {'total': 0, 'by_category': {}}
+
+            self.joke_stats[language]['total'] += 1
             self.joke_stats[language]['by_category'][category] = \
                 self.joke_stats[language]['by_category'].get(category, 0) + 1
 
@@ -79,8 +109,10 @@ class JokeGenerator:
 
             return joke_data
         except Exception as e:
+            error_text = f'Произошла ошибка: {str(e)}'
             return {
-                'text': f'Произошла ошибка: {str(e)}',
+                'text': error_text,
+                'original_text': error_text,
                 'category': 'error',
                 'category_label': 'Ошибка',
                 'language': language,
@@ -97,7 +129,8 @@ class JokeGenerator:
     def clear_history(self):
         """Очистка истории"""
         self.joke_history = []
-        self.joke_stats = {'ru': {'total': 0, 'by_category': {}}, 'en': {'total': 0, 'by_category': {}}}
+        for lang in [l['value'] for l in LANGUAGES]:
+            self.joke_stats[lang] = {'total': 0, 'by_category': {}}
 
     def get_stats(self):
         """Получение статистики"""
@@ -153,7 +186,7 @@ def stats():
     history_data = joke_gen.get_history()
 
     result = {
-        'total': sum(stats['total'] for stats in stats_data.values()),
+        'total': sum(stats.get('total', 0) for stats in stats_data.values()),
         'by_language': {},
         'by_category': {},
         'last_5_jokes': history_data[:5] if history_data else []
@@ -163,14 +196,14 @@ def stats():
     for lang, data in stats_data.items():
         lang_label = joke_gen.get_language_label(lang)
         result['by_language'][lang_label] = {
-            'total': data['total'],
-            'categories': {joke_gen.get_category_label(k): v for k, v in data['by_category'].items()}
+            'total': data.get('total', 0),
+            'categories': {joke_gen.get_category_label(k): v for k, v in data.get('by_category', {}).items()}
         }
 
     # Общая статистика по категориям
     all_categories = {}
     for lang_data in stats_data.values():
-        for cat, count in lang_data['by_category'].items():
+        for cat, count in lang_data.get('by_category', {}).items():
             cat_label = joke_gen.get_category_label(cat)
             all_categories[cat_label] = all_categories.get(cat_label, 0) + count
 
@@ -185,9 +218,23 @@ def categories_info():
     info = {
         'all': 'Смешанные шутки из всех категорий',
         'neutral': 'Нейтральные шутки без обидного юмора',
-        'chuck': 'Шутки про Чака Норриса'
+        'chuck': 'Шутки про Чака Норриса',
+        'twister': 'Английские скороговорки (переводятся)'
     }
     return jsonify(info)
+
+
+@app.route('/supported_languages')
+def supported_languages():
+    """Получение списка поддерживаемых языков перевода[citation:1]"""
+    try:
+        langs = GoogleTranslator().get_supported_languages(as_dict=True)
+        return jsonify({'languages': langs})
+    except:
+        # Возвращаем ручной список в случае ошибки
+        basic_langs = {'en': 'English', 'ru': 'Russian', 'es': 'Spanish',
+                       'fr': 'French', 'de': 'German', 'it': 'Italian'}
+        return jsonify({'languages': basic_langs})
 
 
 if __name__ == '__main__':
@@ -196,9 +243,10 @@ if __name__ == '__main__':
     debug = os.getenv('DEBUG', 'False').lower() == 'true'
 
     print("=" * 50)
-    print("Генератор шуток запущен!")
+    print("Генератор шуток с переводом запущен!")
     print(f"Доступен по адресу: http://{host}:{port}")
-    print("Поддерживаемые языки: русский, английский")
+    print("Поддерживаемые языки: " + ", ".join([lang['label'] for lang in LANGUAGES]))
+    print("Режим работы: Английские шутки → Перевод на выбранный язык")
     print("=" * 50)
 
     app.run(host=host, port=port, debug=debug)

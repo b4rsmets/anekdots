@@ -310,7 +310,6 @@ document.addEventListener('DOMContentLoaded', function() {
         speakJoke(jokeText.textContent);
     });
 
-    exportBtn.addEventListener('click', exportHistory);
 
     // Загрузить первую шутку при загрузке страницы
     fetchJoke();
